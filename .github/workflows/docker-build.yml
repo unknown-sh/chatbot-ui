@@ -48,25 +48,11 @@ jobs:
     # Install Supabase CLI
     - name: Install Supabase CLI
       run: |
-        # Fetch the latest release URL
-        latest_release_url=$(curl -sL https://api.github.com/repos/supabase/cli/releases/latest | grep "browser_download_url.*deb" | cut -d '"' -f 4)
-        
-        if [ -z "$latest_release_url" ]; then
-            echo "Failed to fetch the latest release URL."
-            exit 1
-        fi
-        
-        # Download the latest release .deb package
-        curl -LO "$latest_release_url"
-        
-        # Extract the file name from the URL
-        filename=$(basename "$latest_release_url")
-        
-        # Install the downloaded .deb package
-        sudo dpkg -i "$filename"
-        
-        # Cleanup: Remove the downloaded .deb package
-        rm "$filename"
+        sudo apt update
+        sudo apt install -y curl
+        release_url=$(curl -sSL https://api.github.com/repos/supabase/cli/releases/latest | grep -oP '"browser_download_url": "\K.*?supabase_.*?_linux_amd64.deb')
+        curl -LO "$release_url"
+        sudo dpkg -i supabase_*.deb
 
     # Start Supabase
     - name: Start Supabase
