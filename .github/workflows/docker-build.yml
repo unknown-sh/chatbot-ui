@@ -18,13 +18,32 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    # Install Docker within Docker
-    - name: Install Docker within Docker
-      run: sudo apt update && sudo apt install -y docker-cli
+    # Add Docker's official GPG key
+    - name: Add Docker's GPG key
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ca-certificates curl
+        sudo install -m 0755 -d /etc/apt/keyrings
+        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+    # Add Docker repository to Apt sources
+    - name: Add Docker repository
+      run: |
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update
+
+    # Install Docker using apt after setting up the repository
+    - name: Install Docker
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
     # Pull the latest version of the base image
     - name: Pull latest base image
-      run: docker pull chatbot-ui:latest
+      run: docker pull unknownsh/chatbot-ui:latest
 
     # Install Supabase CLI
     - name: Install Supabase CLI
