@@ -65,7 +65,10 @@ jobs:
     - name: Install Supabase CLI
       run: |
         if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-            brew install supabase/tap/supabase
+            sudo apt-get update && sudo apt-get install -y curl
+            curl -fsSL https://packages.supabase.io/apt/cli/supabase.key | sudo apt-key add -
+            sudo add-apt-repository "deb https://packages.supabase.io/apt/cli $(lsb_release -cs) main"
+            sudo apt-get update && sudo apt-get install -y supabase-cli
         elif [[ "$OSTYPE" == "darwin"* ]]; then
             brew install supabase/tap/supabase
         else
