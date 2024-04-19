@@ -48,9 +48,14 @@ jobs:
     # Install Supabase CLI
     - name: Install Supabase CLI
       run: |
-        if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        if [[ "${{ runner.os }}" == "Linux" ]]; then
             # Fetch the latest release URL
             latest_release_url=$(curl -sL https://api.github.com/repos/supabase/cli/releases/latest | grep "browser_download_url.*deb" | cut -d '"' -f 4)
+            
+            if [ -z "$latest_release_url" ]; then
+                echo "Failed to fetch the latest release URL."
+                exit 1
+            fi
             
             # Download the latest release .deb package
             curl -LO "$latest_release_url"
@@ -63,13 +68,10 @@ jobs:
             
             # Cleanup: Remove the downloaded .deb package
             rm "$filename"
-        elif [[ "$OSTYPE" == "darwin"* ]]; then
-            brew install supabase/tap/supabase
         else
             echo "Unsupported OS"
             exit 1
         fi
-
 
     # Start Supabase
     - name: Start Supabase
