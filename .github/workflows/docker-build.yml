@@ -45,15 +45,20 @@ jobs:
     - name: Pull latest base image
       run: docker pull unknownsh/chatbot-ui:latest
 
+    # Check if the platform is Linux or macOS
+    - name: Check OS and install Homebrew
+      if: runner.os == 'Linux'
+      run: |
+        test -d ~/.linuxbrew && eval "$(~/.linuxbrew/bin/brew shellenv)"
+        test -d /home/linuxbrew/.linuxbrew && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        echo "eval \"\$($(brew --prefix)/bin/brew shellenv)\"" >> ~/.bashrc
+        brew update
+
     # Install Supabase CLI
     - name: Install Supabase CLI
       run: |
-        # Check if the platform is Linux or macOS
         if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-            sudo apt-get update && sudo apt-get install -y curl
-            curl -fsSL https://packages.supabase.io/apt/cli/supabase.key | sudo apt-key add -
-            sudo add-apt-repository "deb https://packages.supabase.io/apt/cli $(lsb_release -cs) main"
-            sudo apt-get update && sudo apt-get install -y supabase-cli
+            brew install supabase/tap/supabase
         elif [[ "$OSTYPE" == "darwin"* ]]; then
             brew install supabase/tap/supabase
         else
