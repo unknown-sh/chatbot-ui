@@ -62,11 +62,11 @@ jobs:
     - name: Fill in Secrets
       run: |
         cp .env.local.example .env.local
-        supabase_status=$(supabase status)
-        supabase_url=$(echo "$supabase_status" | grep -oP 'API URL: \K.*')
-        service_role_key=$(echo "$supabase_status" | grep -oP 'Service Role Key: \K.*')
-        sed -i "s|NEXT_PUBLIC_SUPABASE_URL=.*|NEXT_PUBLIC_SUPABASE_URL=$supabase_url|" .env.local
-        sed -i "s|SUPABASE_SERVICE_ROLE_KEY=.*|SUPABASE_SERVICE_ROLE_KEY=$service_role_key|" .env.local
+        supabase_status=$(supabase status) || { echo "Failed to get Supabase status"; exit 1; }
+        supabase_url=$(echo "$supabase_status" | grep -oP 'API URL: \K.*') || { echo "Failed to extract Supabase API URL"; exit 1; }
+        service_role_key=$(echo "$supabase_status" | grep -oP 'Service Role Key: \K.*') || { echo "Failed to extract Service Role Key"; exit 1; }
+        sed -i "s|NEXT_PUBLIC_SUPABASE_URL=.*|NEXT_PUBLIC_SUPABASE_URL=$supabase_url|" .env.local || { echo "Failed to update NEXT_PUBLIC_SUPABASE_URL"; exit 1; }
+        sed -i "s|SUPABASE_SERVICE_ROLE_KEY=.*|SUPABASE_SERVICE_ROLE_KEY=$service_role_key|" .env.local || { echo "Failed to update SUPABASE_SERVICE_ROLE_KEY"; exit 1; }
 
     # Install Ollama (optional)
     - name: Install Ollama
