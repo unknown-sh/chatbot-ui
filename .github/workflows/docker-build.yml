@@ -20,8 +20,7 @@ jobs:
 
     # Install Docker within Docker
     - name: Install Docker within Docker
-      run: |
-        apk add --no-cache docker-cli
+      run: sudo apt update && sudo apt install -y docker-cli
 
     # Pull the latest version of the base image
     - name: Pull latest base image
