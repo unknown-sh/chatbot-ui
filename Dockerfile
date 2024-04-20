@@ -1,27 +1,20 @@
-# Use the official Node.js 18 image
-FROM node:18
+# Use the official Node.js 16 image as the base image
+FROM node:16-alpine
 
-# Set the working directory inside the container
+# Set the working directory in the container
 WORKDIR /app
 
-# Install dependencies for fetching and running Supabase CLI
-RUN apt-get update && apt-get install -y curl
-
-# Download and install Supabase CLI
-RUN curl -L https://github.com/supabase/cli/releases/latest/download/supabase-linux-x64 -o /usr/local/bin/supabase
-RUN chmod +x /usr/local/bin/supabase
-
-# Copy package.json and package-lock.json to the working directory
+# Copy package.json and package-lock.json to work directory
 COPY package*.json ./
 
-# Install npm dependencies
-RUN npm install
+# Install production dependencies.
+RUN npm install --only=production
 
-# Copy the rest of the application code to the working directory
+# Copy the rest of your app's source code from your host to your image filesystem.
 COPY . .
 
-# Expose the port on which the application will run
+# Expose port 3000 to have it mapped by Docker daemon
 EXPOSE 3000
 
-# Set the command to run the application
-CMD ["npm", "run", "chat"]
+# Command to run when starting the container
+CMD ["npm", "start"]
