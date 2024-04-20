@@ -10,6 +10,9 @@ COPY package*.json ./
 # Install npm dependencies
 RUN npm install
 
+# Install Supabase CLI
+RUN npm install -g supabase
+
 # Copy the rest of the application code to the working directory
 COPY . .
 
@@ -18,4 +21,3 @@ EXPOSE 3000
 
 # Set the command to run the application
 CMD ["npm", "run", "chat"]
-
