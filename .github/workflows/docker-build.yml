@@ -84,9 +84,9 @@ jobs:
       run: |
         npm install next  # Install Next.js
         npm install  # Install other dependencies
-        npm run chat &
+        npm run chat &  # Run npm script in background
         sleep 60  # Wait for the Next.js development server to start
-        kill $(lsof -ti:3000)  # Terminate the Next.js development server
+        kill $(lsof -ti:3000) || true  # Terminate the Next.js development server if it's running
 
     # Build Docker image within DinD container
     - name: Build Docker image
