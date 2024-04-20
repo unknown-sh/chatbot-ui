@@ -82,11 +82,21 @@ jobs:
     # Run the app locally
     - name: Run app locally
       run: |
-        npm install next  # Install Next.js
-        npm install  # Install other dependencies
+        npm install  # Install other dependencies if they've changed
         npm run chat &  # Run npm script in background
         sleep 60  # Wait for the Next.js development server to start
         kill $(lsof -ti:3000) || true  # Terminate the Next.js development server if it's running
+      if: steps.install.outputs.changed-deps == 'true'  # Conditionally execute only if dependencies have changed
+      env:
+        CI: true  # Required for some Node.js packages to run in CI mode
+
+    # Check if dependencies have changed
+    - name: Check for changes in dependencies
+      id: install
+      run: |
+        sh -c "echo ::set-output name=changed-deps::$(git diff --quiet HEAD package-lock.json && echo 'false' || echo 'true')"
+      shell: bash
+      working-directory: ./
 
     # Build Docker image within DinD container
     - name: Build Docker image
