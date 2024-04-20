@@ -81,7 +81,10 @@ jobs:
 
     # Run the app locally
     - name: Run app locally
-      run: npm run chat
+      run: |
+        npm install next  # Install Next.js
+        npm install  # Install other dependencies
+        npm run chat
 
     # Build Docker image within DinD container
     - name: Build Docker image
