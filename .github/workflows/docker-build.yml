@@ -18,101 +18,33 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    # Add Docker's official GPG key
-    - name: Add Docker's GPG key
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y ca-certificates curl
-        sudo install -m 0755 -d /etc/apt/keyrings
-        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-        sudo chmod a+r /etc/apt/keyrings/docker.asc
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
 
-    # Add Docker repository to Apt sources
-    - name: Add Docker repository
-      run: |
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-        sudo apt-get update
-
-    # Install Docker using apt after setting up the repository
-    - name: Install Docker
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-    # Pull the latest version of the base image
-    - name: Pull latest base image
-      run: docker pull unknownsh/chatbot-ui:latest
-
-    # Install Supabase CLI
-    - name: Install Supabase CLI
-      run: |
-        sudo apt update
-        sudo apt install -y curl
-        release_url=$(curl -sSL https://api.github.com/repos/supabase/cli/releases/latest | grep -oP '"browser_download_url": "\K.*?supabase_.*?_linux_amd64.deb')
-        curl -LO "$release_url"
-        sudo dpkg -i supabase_*.deb
-
-    # Start Supabase
-    - name: Start Supabase
-      run: supabase start
-
-    # Fill in Secrets
-    - name: Fill in Secrets
-      run: |
-        cp .env.local.example .env.local
-        supabase_status=$(supabase status)
-        
-        # Extract API URL
-        supabase_url=$(echo "$supabase_status" | awk '/API URL:/ {print $NF}')
-        
-        # Extract service_role key
-        service_role_key=$(echo "$supabase_status" | awk '/service_role key:/ {print $NF}')
-        
-        # Update .env.local with extracted values
-        sed -i "s|NEXT_PUBLIC_SUPABASE_URL=.*|NEXT_PUBLIC_SUPABASE_URL=$supabase_url|" .env.local
-        sed -i "s|SUPABASE_SERVICE_ROLE_KEY=.*|SUPABASE_SERVICE_ROLE_KEY=$service_role_key|" .env.local
-
-    # Install Ollama (optional)
-    - name: Install Ollama
-      run: |
-        # Add commands to install Ollama here (if needed)
-
-    # Run the app locally
-    - name: Run app locally
-      run: |
-        npm install  # Install other dependencies if they've changed
-        npm run chat &  # Run npm script in background
-        sleep 60  # Wait for the Next.js development server to start
-        kill $(lsof -ti:3000) || true  # Terminate the Next.js development server if it's running
-      if: steps.install.outputs.changed-deps == 'true'  # Conditionally execute only if dependencies have changed
-      env:
-        CI: true  # Required for some Node.js packages to run in CI mode
-
-    # Check if dependencies have changed
-    - name: Check for changes in dependencies
-      id: install
-      run: |
-        sh -c "echo ::set-output name=changed-deps::$(git diff --quiet HEAD package-lock.json && echo 'false' || echo 'true')"
-      shell: bash
-      working-directory: ./
-
-    # Build Docker image within DinD container
-    - name: Build Docker image
-      run: |
-        docker build -t chatbot-ui .
-
-    # Log in to Docker Hub
     - name: Log in to Docker Hub
       uses: docker/login-action@v1
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # Push Docker image
-    - name: Push Docker image
-      run: |
-        docker tag chatbot-ui ${{ secrets.DOCKER_USERNAME }}/chatbot-ui:latest
-        docker push ${{ secrets.DOCKER_USERNAME }}/chatbot-ui:latest
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ secrets.DOCKER_USERNAME }}/chatbot-ui:latest
 
+    - name: Run Supabase locally (for integration tests)
+      run: |
+        docker pull supabase/supabase
+        docker run -d --name supabase -p 8000:8000 supabase/supabase
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    - name: Integration Tests
+      run: npm run test-integration
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    - name: Cleanup Supabase Instance
+      if: always()
+      run: docker rm -f supabase
